@@ -97,6 +97,31 @@ static void set_env_for_ip(request_rec *r, maxminddb_server_config *mmsrvcfg,
 static void set_user_env(request_rec *r, maxminddb_server_config *mmsrvcfg,
                          const char *ipaddr);
 
+static int mg_vasprintf(char ** ret, const char * format, va_list ap)
+{
+    int length;
+    va_list nap;
+    va_copy(nap, ap);
+    length = vsnprintf(0, 0, format, nap);
+    va_end(nap);
+    if (length++ >= 0) {
+        if ((*ret = malloc(length))) {
+            return vsnprintf(*ret, length, format, ap);
+        }
+    }
+    *ret = NULL;
+    return -1;
+}
+
+static int mg_asprintf(char ** ret, const char * format, ...)
+{
+    va_list ap;
+    va_start(ap, format);
+    len = mg_vasprintf(ret, format, ap);
+    va_end(ap);
+    return len;
+}
+
 static void init_maxminddb_server_config(maxminddb_server_config *srv)
 {
     srv->nextdb = NULL;
@@ -484,7 +509,7 @@ static void set_user_env(request_rec *r, maxminddb_server_config *mmsrvcfg,
                     int len;
                     switch (result.type) {
                     case MMDB_DATA_TYPE_BOOLEAN:
-                        len = asprintf(&value, "%d", result.boolean);
+                        len = mg_asprintf(&value, "%d", result.boolean);
                         break;
                     case MMDB_DATA_TYPE_UTF8_STRING:
                         value = malloc(result.data_size + 1);
@@ -499,28 +524,28 @@ static void set_user_env(request_rec *r, maxminddb_server_config *mmsrvcfg,
                         len = result.data_size;
                         break;
                     case MMDB_DATA_TYPE_FLOAT:
-                        len = asprintf(&value, "%.5f", result.float_value);
+                        len = mg_asprintf(&value, "%.5f", result.float_value);
                         break;
                     case MMDB_DATA_TYPE_DOUBLE:
-                        len = asprintf(&value, "%.5f", result.double_value);
+                        len = mg_asprintf(&value, "%.5f", result.double_value);
                         break;
                     case MMDB_DATA_TYPE_UINT16:
-                        len = asprintf(&value, "%d", result.uint16);
+                        len = mg_asprintf(&value, "%d", result.uint16);
                         break;
                     case MMDB_DATA_TYPE_UINT32:
-                        len = asprintf(&value, "%u", result.uint32);
+                        len = mg_asprintf(&value, "%u", result.uint32);
                         break;
                     case MMDB_DATA_TYPE_INT32:
-                        len = asprintf(&value, "%d", result.int32);
+                        len = mg_asprintf(&value, "%d", result.int32);
                         break;
                     case MMDB_DATA_TYPE_UINT64:
-                        len = asprintf(&value, "%" PRIu64, result.uint64);
+                        len = mg_asprintf(&value, "%" PRIu64, result.uint64);
                         break;
                     case MMDB_DATA_TYPE_UINT128:
 #if MMDB_UINT128_IS_BYTE_ARRAY
                         {
                             uint8_t *p = (uint8_t *)result.uint128;
-                            len = asprintf(&value, "%02x%02x%02x%02x"
+                            len = mg_asprintf(&value, "%02x%02x%02x%02x"
                                            "%02x%02x%02x%02x"
                                            "%02x%02x%02x%02x"
                                            "%02x%02x%02x%02x",
@@ -533,7 +558,7 @@ static void set_user_env(request_rec *r, maxminddb_server_config *mmsrvcfg,
                         {
                             mmdb_uint128_t v = result.uint128;
                             len =
-                                asprintf(&value, "%016" PRIx64 "%016" PRIx64,
+                                mg_asprintf(&value, "%016" PRIx64 "%016" PRIx64,
                                          (uint64_t)(v >> 64), (uint64_t)v);
                         }
 
