@@ -115,6 +115,7 @@ static int mg_vasprintf(char ** ret, const char * format, va_list ap)
 
 static int mg_asprintf(char ** ret, const char * format, ...)
 {
+    int len;
     va_list ap;
     va_start(ap, format);
     len = mg_vasprintf(ret, format, ap);
