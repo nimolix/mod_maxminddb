@@ -99,14 +99,14 @@ static void set_user_env(request_rec *r, maxminddb_server_config *mmsrvcfg,
 
 static int mg_vasprintf(char ** ret, const char * format, va_list ap)
 {
-    int length;
+    int len;
     va_list nap;
     va_copy(nap, ap);
-    length = vsnprintf(0, 0, format, nap);
+    len = vsnprintf(0, 0, format, nap);
     va_end(nap);
-    if (length++ >= 0) {
-        if ((*ret = malloc(length))) {
-            return vsnprintf(*ret, length, format, ap);
+    if (len++ >= 0) {
+        if ((*ret = malloc(len))) {
+            return vsnprintf(*ret, len, format, ap);
         }
     }
     *ret = NULL;
